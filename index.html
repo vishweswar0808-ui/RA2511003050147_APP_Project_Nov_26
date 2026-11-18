@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Exam Timetable Generator</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">Smart<span>Exam</span></div>
+        <a class="nav-item active" href="#dashboard">Dashboard</a>
+        <a class="nav-item" href="#setup">Exam Setup</a>
+        <a class="nav-item" href="#subjects">Subjects</a>
+        <a class="nav-item" href="#timetable">Timetable</a>
+    
+    </aside>
+
+    <main id="dashboard">
+        <header class="topbar">
+            <div>
+                <h1>Exam Dashboard</h1>
+                <p class="muted">Smart academic examination scheduling</p>
+            </div>
+            <div class="profile">Administrator</div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for category, message in messages %}
+            <div class="notice">{{ message }}</div>
+          {% endfor %}
+        {% endwith %}
+
+        <section class="stats">
+            <div class="stat">
+                <span class="muted">Academic Years</span>
+                <h2>04</h2>
+                <span class="muted">Years 1–4</span>
+            </div>
+            <div class="stat">
+                <span class="muted">Departments</span>
+                <h2>07</h2>
+                <span class="muted">B.Tech programs</span>
+            </div>
+            <div class="stat">
+                <span class="muted">Subjects Added</span>
+                <h2>{{ subjects|length }}</h2>
+                <span class="muted">Current session</span>
+            </div>
+        </section>
+
+        <section class="panel" id="setup">
+            <h2>Add Examination Subject</h2>
+
+            <form method="POST">
+                <input type="hidden" name="action" value="add">
+
+                <div class="form-grid">
+                    <div>
+                        <label for="year">Academic Year</label>
+                        <select id="year" name="year" required>
+                            <option value="">Select year</option>
+                            {% for item in years %}
+                            <option value="{{ item }}">{{ item }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="semester">Semester</label>
+                        <select id="semester" name="semester" required>
+                            <option value="">Select semester</option>
+                            {% for item in semesters %}
+                            <option value="{{ item }}">{{ item }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="department">Department</label>
+                        <select id="department" name="department" required>
+                            <option value="">Select department</option>
+                            {% for item in departments %}
+                            <option value="{{ item }}">{{ item }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="subject">Subject Name</label>
+                        <input id="subject" name="subject"
+                               placeholder="e.g. Mathematics" required>
+                    </div>
+
+                    <div>
+                        <label for="examDate">Earliest Exam Date</label>
+                        <input id="examDate" name="examDate" type="date"
+                               min="{{ today }}" required>
+                    </div>
+
+                    <div>
+                        <label for="session">Preferred Session</label>
+                        <select id="session" name="session" required>
+                            <option value="">Select session</option>
+                            <option>Morning</option>
+                            <option>Afternoon</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit">Add Subject</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="panel" id="subjects">
+            <h2>Subject List</h2>
+            {% if subjects %}
+            <div style="overflow-x:auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Year</th>
+                            <th>Semester</th>
+                            <th>Department</th>
+                            <th>Earliest Date</th>
+                            <th>Session</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in subjects %}
+                        <tr>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.year }}</td>
+                            <td>{{ item.semester }}</td>
+                            <td>{{ item.department }}</td>
+                            <td>{{ item.date }}</td>
+                            <td>{{ item.session }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="muted">No subjects added yet.</p>
+            {% endif %}
+        </section>
+
+        <section class="panel" id="timetable">
+            <h2>Generated Timetable</h2>
+
+            {% if timetable %}
+            <div style="overflow-x:auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Session</th>
+                            <th>Year</th>
+                            <th>Semester</th>
+                            <th>Department</th>
+                            <th>Subject</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in timetable %}
+                        <tr>
+                            <td>{{ item.date }}</td>
+                            <td>{{ item.session }}</td>
+                            <td>
+    <a href="#edit-{{ item.id }}">Edit</a>
+
+    <form method="POST"
+          action="{{ url_for('remove_subject', subject_id=item.id) }}"
+          onsubmit="return confirm('Delete this subject?')"
+          style="display:inline">
+        <button type="submit" style="background:#b91c1c">
+            Delete
+        </button>
+    </form>
+</td>
+                            <td>{{ item.year }}</td>
+                            <td>{{ item.semester }}</td>
+                            <td>{{ item.department }}</td>
+                            <td>{{ item.name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="form-actions">
+                <a href="{{ url_for('download') }}">
+                    <button type="button">Download timetable.csv</button>
+                </a>
+            </p>
+            {% else %}
+            <p class="muted">
+                Add subjects and generate your schedule below.
+            </p>
+            {% endif %}
+
+            <form method="POST" style="display:inline-block">
+                <input type="hidden" name="action" value="generate">
+                <button type="submit">Generate Timetable</button>
+            </form>
+
+            <form method="POST" style="display:inline-block"
+                  onsubmit="return confirm('Clear all subjects?')">
+                <input type="hidden" name="action" value="clear">
+                <button type="submit"
+                        style="background:#b91c1c">Clear All</button>
+            </form>
+        </section>
+    </main>
+</div>
+</body>
+</html>
